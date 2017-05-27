@@ -1,0 +1,742 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>基于统计方法的数据分布图形显示</title>
+<link rel="stylesheet" type="text/css" href="view.css" media="all">
+<script src="http://d3js.org/d3.v3.js" charset="utf-8"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+<!--<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>-->
+<style>
+	body
+	{
+		background:#FFF0F5;
+		font-family:"Lucida Grande", Tahoma, Arial, Verdana, sans-serif;
+		font-size:small;
+		margin:8px 0 16px;
+		text-align:center;
+	}
+
+
+	.bar{
+	    fill: steelblue;
+	}
+
+	.bar:hover{
+		fill: brown;
+	}
+
+	.axis {
+		font: 10px sans-serif;
+	}
+
+	.axis path,
+	.axis line {
+		fill: none;
+		stroke: #000;
+		shape-rendering: crispEdges;
+	}
+	
+	
+
+	.x.axis path {
+	    display: none;
+	}
+
+	.d3-tip {
+		line-height: 1;
+		font-weight: bold;
+		padding: 12px;
+		background: rgba(0, 0, 0, 0.8);
+		color: #fff;
+		border-radius: 2px;
+	}
+
+	/* Creates a small triangle extender for the tooltip */
+	.d3-tip:after {
+	    box-sizing: border-box;
+	    display: inline;
+	    font-size: 10px;
+	    width: 100%;
+	    line-height: 1;
+	    color: rgba(0, 0, 0, 0.8);
+	    content: "\25BC";
+	    position: absolute;
+	    text-align: center;
+	}
+
+	/* Style northward tooltips differently */
+	.d3-tip.n:after {
+	    margin: -1px 0 0 0;
+	    top: 100%;
+	    left: 0;
+	}
+</style>
+
+</head>
+<body id="main_body" >
+	
+	<img id="top" src="top.png" alt="">
+	<div id="form_container">
+		<form id="addform" target="_blank" class="appnitro" enctype="multipart/form-data" method="post" action="importCSV.php?action=import" >
+		<div class="form_description">
+			<h2>基于统计方法的数据分布图形显示</h2>
+			<p>请首先导入CSV文件到数据库，然后勾选需要了解的属性，即可实现可视化及交互</p>
+		</div>		
+		<ul >
+			
+			<li id="li_1" >
+			<label class="description" for="element_1">导入CSV文件 </label>
+			</br>
+			<div>
+				<input id="element_1" name="file" class="element file" type="file"/> 
+				</div> <p class="guidelines" id="guide_1"><small>请选择你要上传到数据库的CSV文件</small></p> 
+			</li>	
+
+			<li class="buttons">
+				
+				<input id="saveForm" class="button_text" type="submit" name="submit" value="Submit" />
+			</li>
+			
+		</ul>
+		</form>	
+
+	</div>
+	
+	<script type="text/javascript">
+<!--
+	var dataByGroup = new Array();
+
+	var tbl_name = [];
+	tbl_name[0] = "age";
+	tbl_name[1] = "job";
+	tbl_name[2] = "marital";
+	tbl_name[3] = "education";
+	tbl_name[4] = "mydefault";
+	tbl_name[5] = "balance";
+	tbl_name[6] = "housing";
+	tbl_name[7] = "loan";
+	tbl_name[8] = "contact";
+	tbl_name[9] = "day";
+	tbl_name[10] = "month";
+	tbl_name[11] = "duration";
+	tbl_name[12] = "campaign";
+	tbl_name[13] = "pdays";
+	tbl_name[14] = "previous";
+	tbl_name[15] = "poutcome";
+	tbl_name[16] = "y";
+	
+	for (let i = 0; i <= 16; i++) 
+	{
+		//console.log(tbl_name[i]);
+		d3.json("http://localhost/statistics.php?name=" + tbl_name[i],
+		function(error, data) 
+		{
+			dataByGroup[i] = [].concat(data);	
+			//console.log(dataByGroup[i]);	
+		});
+		
+	}
+	var flag = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+	var my_flag;
+	var parms =[];
+
+	function bar_reset(my_id) {
+		showData = [];
+
+		for(let i = 0; i <= 16; i++)
+		{
+			
+			if(flag[i] === 1)
+			{
+
+				my_id_plot = tbl_name[i] + my_id;
+				console.log(my_id_plot);
+				d3.json("http://localhost/statistics2.php?name=" + my_id_plot, 
+				function(error, data) {
+					showData = showData.concat(data);
+				});
+				my_flag = 1;
+				render2(showData, i, my_flag);
+			}
+			else {
+				var ele = document.getElementById(i)
+					ele.innerHTML = "";
+			}	
+		}
+		parms = [];
+	}
+	function render2(data, plot_id, my_flag) {
+		data_length = data.length;
+
+		
+		
+		// max count(*)
+		data_max = Math.max.apply(Math,data.map(function(d){
+			return d["COUNT(*)"];}));
+		data_min = Math.min.apply(Math,data.map(function(d){return d["COUNT(*)"];}));
+		// set the ranges
+		// 定义比例尺，将横轴、纵轴的取值映射到坐标
+		if (data_length > 200)
+		{
+
+			var margin = {top: 20, right: 80, bottom: 80, left: 80},
+		
+				width = 1000 - margin.left - margin.right;
+				height = 600 - margin.top - margin.bottom;
+			
+			//添加SVG绘制区域
+			var svg = d3.select(document.getElementById(plot_id)).append("svg")
+								.attr("width",width + margin.left + margin.right)
+								.attr("height",height + margin.top + margin.bottom);
+			var val_min = Math.min.apply(Math,data.map(function(d){return d[tbl_name[plot_id]];}));
+			var val_max = Math.max.apply(Math,data.map(function(d){return d[tbl_name[plot_id]];}));
+			//console.log(val_max, val_min);
+			var bin_num = 20;
+			var histogram = d3.layout.histogram()
+						.value(function(d) { return d[tbl_name[plot_id]]; })
+						.range([val_min-10,val_max+10])
+					          		.bins(bin_num)
+						.frequency(true);
+			var data_trans = histogram(data);
+			//console.log(data);
+			//console.log(data_trans);
+
+			//定义比例尺
+			var max_height = 500;
+			var rect_step = 40;
+			var heights = [];
+			var trans_length = data_trans.length;
+
+			
+
+			for(var i=0;i<trans_length;i++){
+				heights.push( data_trans[i].y );
+				//console.log(data_trans[i].y);
+			}
+			var yScale = d3.scale.linear()
+								.domain([d3.min(heights),d3.max(heights)])
+								.range([max_height, 0]);
+			var yAxis = d3.svg.axis()  
+                        .scale(yScale)  
+                        .orient("left")
+                        .ticks(20); 
+            var tip = d3.tip()
+				 .attr('class', 'd3-tip')
+				 .offset([-10, 0])
+				 .html(function(d) {
+				     return "<strong>Frequency:</strong> <span style='color:red'>" + d.y + "</span>";
+			})
+			//绘制图形
+			var graphics = svg.append("g")
+								//.attr("transform","translate(30,20)");
+			 
+			    			.attr("transform", 
+			          			"translate(" + margin.left + "," + margin.top + ")");
+			svg.call(tip);
+			//绘制矩形
+			graphics.selectAll("rect")
+					.data(data_trans)
+					.enter()
+					.append("rect")
+					.attr("x",function(d,i){
+						return i * rect_step; 
+					})
+					.attr("y", function(d,i){
+						return yScale(d.y);
+					})
+					.attr("width", function(d,i){
+						return rect_step - 2; 
+					})
+					.attr("height", function(d){
+						return max_height - yScale(d.y);
+					})
+					.attr("fill","orange")
+					.on('click', function() {
+						console.log(this.id);
+						
+						parms = parms + '__' + this.id;
+						//bar_reset(parms);
+					})
+					.on('mouseover', tip.show)
+					.on('mouseout', tip.hide);
+			
+			//绘制坐标轴的直线
+			graphics.append("line")
+					.attr("stroke","black")
+					.attr("stroke-width","1px")
+					.attr("x1",0)
+					.attr("y1",max_height)
+					.attr("x2",trans_length * rect_step)
+					.attr("y2",max_height);
+			
+			graphics.append("line")
+				    .attr("stroke","black")
+				    .attr("stroke-width","1px")
+				    .attr("x1",0)
+				    .attr("y1",max_height)
+				    .attr("x2",0)
+				    .attr("y2",0)		
+			//绘制坐标轴的分隔符直线
+			graphics.selectAll(".linetick")
+					.data(data_trans)
+					.enter()
+					.append("line")
+					.attr("stroke","black")
+					.attr("stroke-width","1px")
+					.attr("x1",function(d,i){
+						return i * rect_step + rect_step/2;
+					})
+					.attr("y1",max_height)
+					.attr("x2",function(d,i){
+						return i * rect_step + rect_step/2;
+					})
+					.attr("y2",max_height + 5);
+			
+			//绘制文字
+			graphics.selectAll("text")
+					.data(data_trans)
+					.enter()
+					.append("text")
+					.attr("font-size","10px")
+					.attr("x",function(d,i){
+						return i * rect_step; 
+					})
+					.attr("y", function(d,i){
+						return max_height;
+					})
+					.attr("dx",rect_step/2 - 8)
+					.attr("dy","15px")
+					.text(function(d){
+						return Math.floor(d.x);
+					});
+			/*graphics.attr("class","axis")  
+	            .attr("transform","translate(30,20)") 
+	            .call(yAxis) 
+	            .append("text")
+			    .attr("transform", "rotate(-90)")
+			    .attr("y", 6)
+			    .attr("dy", ".51em")
+			    .style("text-anchor", "end")
+			    .text("Frequency");	*/
+		}
+		else {
+			var formatCount = d3.format(",.0f");
+			// set the dimensions of the canvas
+			var margin = {top: 20, right: 20, bottom: 80, left: 80},
+			    width = (data_length*40 < 180 ? 180:(data_length *40 < 400 ? 400 : (data_length * 40 > 1000 ? 1000 : data_length * 40))) - margin.left - margin.right,
+			    height = 600 - margin.top - margin.bottom;
+			var x = d3.scale.ordinal()
+				  .domain(data.map(function(d) { return d[tbl_name[plot_id]]; }))
+				  .rangeRoundBands([0, width]);
+
+		
+			var y = d3.scale.linear()
+					  .domain([0, data_max])
+					  .range([height, 0]);
+
+			// define the axis
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .orient("bottom")
+
+
+			var yAxis = d3.svg.axis()
+			    .scale(y)
+			    .orient("left")
+			    .ticks(20);
+
+			var tip = d3.tip()
+				 .attr('class', 'd3-tip')
+				 .offset([-10, 0])
+				 .html(function(d) {
+				     return "<strong>Frequency:</strong> <span style='color:red'>" + d["COUNT(*)"] + "</span>";
+			})
+			// add the SVG element
+			var svg = d3.select(document.getElementById(plot_id)).append("svg")
+			    .attr("width", width + margin.left + margin.right)
+			    .attr("height", height + margin.top + margin.bottom)
+			    .append("g")
+			    .attr("transform", 
+			          "translate(" + margin.left + "," + margin.top + ")");
+			svg.call(tip);
+			// scale the range of the data
+			x.domain(data.map(function(d) { return d[tbl_name[plot_id]]; }));
+			y.domain([0, data_max]);
+			//console.log(d3.max(data, function(d) {return d["COUNT(*)"];}));
+
+			// add axis
+			svg.append("g")
+			  .attr("class", "x axis")
+			  .attr("transform", "translate(0," + height + ")")
+			  .call(xAxis)
+			  .selectAll("text")
+			  .style("text-anchor", "end")
+			  .attr("dx", "-.8em")
+			  .attr("dy", "-.55em")
+			  .attr("transform", "rotate(-90)" );
+
+			svg.append("g")
+			  .attr("class", "y axis")
+			  .call(yAxis)
+			  .append("text")
+			  .attr("transform", "rotate(-90)")
+			  .attr("y", 5)
+			  .attr("dy", ".71em")
+			  .style("text-anchor", "end")
+			  .text("Frequency");
+
+			
+			  // Add bar chart
+			svg.selectAll(".bar")
+	      		.data(data)
+	    		.enter().append("rect")
+				.attr("class", "bar")
+				.attr("x", function(d) { 
+					return x(d[tbl_name[plot_id]]); 
+				})
+				.attr("width", x.rangeBand() - 2)
+				.attr("y", function(d) { 
+					return y(d["COUNT(*)"]); 
+				})
+
+				.attr("height", function(d) { return height - y(d["COUNT(*)"]); })
+				.attr("id", function(d){
+					return tbl_name[plot_id] + '_' + d[tbl_name[plot_id]] + '_' + d["COUNT(*)"];
+				})
+				.attr('fill', 'orange')
+				.on('click', function() {
+					console.log(this.id);
+					
+					parms = parms + '__' + this.id;
+					//bar_reset(parms);
+				})
+				.on('mouseover', tip.show)
+				.on('mouseout', tip.hide);
+			}
+	}
+
+	function draw_plot(plot_id) {
+		flag[plot_id] = 1 - flag[plot_id];// change the show/unshow state
+		showData = [];
+		if (flag[plot_id] === 1) {
+			showData = showData.concat(dataByGroup[plot_id]);
+			my_flag = 0;
+			render1(showData, plot_id, my_flag);		
+		}
+		else {
+			var ele = document.getElementById(plot_id)
+			ele.innerHTML = "";
+		}
+		
+	} 
+
+	function render1(data, plot_id, my_flag) {
+		//var test = document.getElementById('test');
+		//test.innerHTML = "hello world";
+		
+		data_length = data.length;
+
+		
+		
+		// max count(*)
+		data_max = Math.max.apply(Math,data.map(function(d){
+			return d["COUNT(*)"];}));
+		data_min = Math.min.apply(Math,data.map(function(d){return d["COUNT(*)"];}));
+		// set the ranges
+		// 定义比例尺，将横轴、纵轴的取值映射到坐标
+		if (data_length > 200)
+		{
+
+			var margin = {top: 20, right: 80, bottom: 80, left: 80},
+		
+				width = 1000 - margin.left - margin.right;
+				height = 600 - margin.top - margin.bottom;
+			
+			//添加SVG绘制区域
+			var svg = d3.select(document.getElementById(plot_id)).append("svg")
+								.attr("width",width + margin.left + margin.right)
+								.attr("height",height + margin.top + margin.bottom);
+			var val_min = Math.min.apply(Math,data.map(function(d){return d[tbl_name[plot_id]];}));
+			var val_max = Math.max.apply(Math,data.map(function(d){return d[tbl_name[plot_id]];}));
+			//console.log(val_max, val_min);
+			var bin_num = 20;
+			var histogram = d3.layout.histogram()
+						.value(function(d) { return d[tbl_name[plot_id]]; })
+						.range([val_min-10,val_max+10])
+					          		.bins(bin_num)
+						.frequency(true);
+			var data_trans = histogram(data);
+			//console.log(data);
+			//console.log(data_trans);
+
+			//定义比例尺
+			var max_height = 500;
+			var rect_step = 40;
+			var heights = [];
+			var trans_length = data_trans.length;
+
+			
+
+			for(var i=0;i<trans_length;i++){
+				heights.push( data_trans[i].y );
+				//console.log(data_trans[i].y);
+			}
+			var yScale = d3.scale.linear()
+								.domain([d3.min(heights),d3.max(heights)])
+								.range([max_height, 0]);
+			var yAxis = d3.svg.axis()  
+                        .scale(yScale)  
+                        .orient("left")
+                        .ticks(20); 
+            var tip = d3.tip()
+				 .attr('class', 'd3-tip')
+				 .offset([-10, 0])
+				 .html(function(d) {
+				     return "<strong>Frequency:</strong> <span style='color:red'>" + d.y + "</span>";
+			})
+			//绘制图形
+			var graphics = svg.append("g")
+								//.attr("transform","translate(30,20)");
+			 
+			    			.attr("transform", 
+			          			"translate(" + margin.left + "," + margin.top + ")");
+			svg.call(tip);
+			//绘制矩形
+			graphics.selectAll("rect")
+					.data(data_trans)
+					.enter()
+					.append("rect")
+					.attr("x",function(d,i){
+						return i * rect_step; 
+					})
+					.attr("y", function(d,i){
+						return yScale(d.y);
+					})
+					.attr("width", function(d,i){
+						return rect_step - 2; 
+					})
+					.attr("height", function(d){
+						return max_height - yScale(d.y);
+					})
+					.attr("fill","steelblue")
+					.on('click', function() {
+						console.log(this.id);
+						
+						parms = parms + '__' + this.id;
+						//bar_reset(parms);
+					})
+					.on('mouseover', tip.show)
+					.on('mouseout', tip.hide);
+			
+			//绘制坐标轴的直线
+			graphics.append("line")
+					.attr("stroke","black")
+					.attr("stroke-width","1px")
+					.attr("x1",0)
+					.attr("y1",max_height)
+					.attr("x2",trans_length * rect_step)
+					.attr("y2",max_height);
+			
+			graphics.append("line")
+				    .attr("stroke","black")
+				    .attr("stroke-width","1px")
+				    .attr("x1",0)
+				    .attr("y1",max_height)
+				    .attr("x2",0)
+				    .attr("y2",0)		
+			//绘制坐标轴的分隔符直线
+			graphics.selectAll(".linetick")
+					.data(data_trans)
+					.enter()
+					.append("line")
+					.attr("stroke","black")
+					.attr("stroke-width","1px")
+					.attr("x1",function(d,i){
+						return i * rect_step + rect_step/2;
+					})
+					.attr("y1",max_height)
+					.attr("x2",function(d,i){
+						return i * rect_step + rect_step/2;
+					})
+					.attr("y2",max_height + 5);
+			
+			//绘制文字
+			graphics.selectAll("text")
+					.data(data_trans)
+					.enter()
+					.append("text")
+					.attr("font-size","10px")
+					.attr("x",function(d,i){
+						return i * rect_step; 
+					})
+					.attr("y", function(d,i){
+						return max_height;
+					})
+					.attr("dx",rect_step/2 - 8)
+					.attr("dy","15px")
+					.text(function(d){
+						return Math.floor(d.x);
+					});
+			/*graphics.attr("class","axis")  
+	            .attr("transform","translate(30,20)") 
+	            .call(yAxis) 
+	            .append("text")
+			    .attr("transform", "rotate(-90)")
+			    .attr("y", 6)
+			    .attr("dy", ".51em")
+			    .style("text-anchor", "end")
+			    .text("Frequency");	*/
+		}
+		else {
+			var formatCount = d3.format(",.0f");
+			// set the dimensions of the canvas
+			var margin = {top: 20, right: 20, bottom: 80, left: 80},
+			    width = (data_length*40 < 180 ? 180:(data_length *40 < 400 ? 400 : (data_length * 40 > 1000 ? 1000 : data_length * 40))) - margin.left - margin.right,
+			    height = 600 - margin.top - margin.bottom;
+			var x = d3.scale.ordinal()
+				  .domain(data.map(function(d) { return d[tbl_name[plot_id]]; }))
+				  .rangeRoundBands([0, width]);
+
+		
+			var y = d3.scale.linear()
+					  .domain([0, data_max])
+					  .range([height, 0]);
+
+			// define the axis
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .orient("bottom")
+
+
+			var yAxis = d3.svg.axis()
+			    .scale(y)
+			    .orient("left")
+			    .ticks(20);
+
+			var tip = d3.tip()
+				 .attr('class', 'd3-tip')
+				 .offset([-10, 0])
+				 .html(function(d) {
+				     return "<strong>Frequency:</strong> <span style='color:red'>" + d["COUNT(*)"] + "</span>";
+			})
+			// add the SVG element
+			var svg = d3.select(document.getElementById(plot_id)).append("svg")
+			    .attr("width", width + margin.left + margin.right)
+			    .attr("height", height + margin.top + margin.bottom)
+			    .append("g")
+			    .attr("transform", 
+			          "translate(" + margin.left + "," + margin.top + ")");
+			svg.call(tip);
+			// scale the range of the data
+			x.domain(data.map(function(d) { return d[tbl_name[plot_id]]; }));
+			y.domain([0, data_max]);
+			//console.log(d3.max(data, function(d) {return d["COUNT(*)"];}));
+
+			// add axis
+			svg.append("g")
+			  .attr("class", "x axis")
+			  .attr("transform", "translate(0," + height + ")")
+			  .call(xAxis)
+			  .selectAll("text")
+			  .style("text-anchor", "end")
+			  .attr("dx", "-.8em")
+			  .attr("dy", "-.55em")
+			  .attr("transform", "rotate(-90)" );
+
+			svg.append("g")
+			  .attr("class", "y axis")
+			  .call(yAxis)
+			  .append("text")
+			  .attr("transform", "rotate(-90)")
+			  .attr("y", 5)
+			  .attr("dy", ".71em")
+			  .style("text-anchor", "end")
+			  .text("Frequency");
+
+			
+			  // Add bar chart
+			svg.selectAll(".bar")
+	      		.data(data)
+	    		.enter().append("rect")
+				.attr("class", "bar")
+				.attr("x", function(d) { 
+					return x(d[tbl_name[plot_id]]); 
+				})
+				.attr("width", x.rangeBand() - 2)
+				.attr("y", function(d) { 
+					return y(d["COUNT(*)"]); 
+				})
+
+				.attr("height", function(d) { return height - y(d["COUNT(*)"]); })
+				.attr("id", function(d){
+					return tbl_name[plot_id] + '_' + d[tbl_name[plot_id]] + '_' + d["COUNT(*)"];
+				})
+				.attr('fill', 'steelblue')
+				.on('click', function() {
+					console.log(this.id);
+					
+					parms = parms + '__' + this.id;
+
+					//bar_reset(parms);
+				})
+				.on('mouseover', tip.show)
+				.on('mouseout', tip.hide);
+			}
+			
+		}
+	function type(d) {
+		  d["COUNT(*)"] = +d["COUNT(*)"];
+		  return d;
+		}
+
+--> 
+	</script>
+
+	</br>
+	</br>
+	<input type="checkbox" name="key" value="age" onclick="draw_plot(0);">age
+	<input type="checkbox" name="key" value="job" onclick="draw_plot(1)">job
+	<input type="checkbox" name="key" value="marital" onclick="draw_plot(2)">marital
+	<input type="checkbox" name="key" value="education" onclick="draw_plot(3)">education
+	<input type="checkbox" name="key" value="mydefault" onclick="draw_plot(4)">mydefault
+	<input type="checkbox" name="key" value="balance" onclick="draw_plot(5)">balance
+	<input type="checkbox" name="key" value="housing" onclick="draw_plot(6)">housing
+	<input type="checkbox" name="key" value="loan" onclick="draw_plot(7)">loan
+	<input type="checkbox" name="key" value="contact" onclick="draw_plot(8)">contact
+	<input type="checkbox" name="key" value="day" onclick="draw_plot(9)">day
+	<input type="checkbox" name="key" value="month" onclick="draw_plot(10)">month
+	<input type="checkbox" name="key" value="duration" onclick="draw_plot(11)">duration
+	<input type="checkbox" name="key" value="campaign" onclick="draw_plot(12)">campaign
+	<input type="checkbox" name="key" value="pdays" onclick="draw_plot(13)">pdays
+	<input type="checkbox" name="key" value="previous" onclick="draw_plot(14)">previous
+	<input type="checkbox" name="key" value="poutcome" onclick="draw_plot(15)">poutcome
+	<input type="checkbox" name="key" value="y" onclick="draw_plot(16)">y
+	</br>
+
+	<img id="bottom" src="bottom.png" alt="">
+	</br>
+	<button onclick="bar_reset(parms)">set</button>
+	<div id='0'></div>
+	<div id='1'></div>
+	<div id='2'></div>
+	<div id='3'></div>
+	<div id='4'></div>
+	<div id='5'></div>
+	<div id='6'></div>
+	<div id='7'></div>
+	<div id='8'></div>
+	<div id='9'></div>
+	<div id='10'></div>
+	<div id='11'></div>
+	<div id='12'></div>
+	<div id='13'></div>
+	<div id='14'></div>
+	<div id='15'></div>
+	<div id='16'></div>
+	</br>
+	
+	
+	
+	</body>
+</html>
