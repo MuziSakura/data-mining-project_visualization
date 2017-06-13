@@ -18,7 +18,7 @@
         echo '正在读取文件，请稍等...'. "<br />";
         //打开读取文件数据
         $handle = fopen($filename, 'r');
-        //解析csv自定义的函数
+        //解析csv，使用config.php中自定义的函数input_csv
         $result = input_csv($handle);
         //获取结果集数据数组文件总行数
         $len_result = count($result);

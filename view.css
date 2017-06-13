@@ -13,7 +13,7 @@ body
 	
 	margin:0 auto;
 	text-align:left;
-	width:640px;
+	width:645px;
 }
 
 #top
@@ -862,9 +862,7 @@ border-bottom: 1px solid #999;
 background: #dedede;
 font-weight: bold;
 }
-.bar{
-    fill: orange;
-}
+
 
 .bar:hover{
 	fill: brown;

@@ -1,0 +1,328 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>基于统计方法的数据分布图形显示</title>
+<link rel="stylesheet" type="text/css" href="view.css" media="all">
+<script src="http://d3js.org/d3.v3.js" charset="utf-8"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+<script src=render1.js charset="utf-8"></script>
+<script src=render2.js charset="utf-8"></script>
+<!--<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>-->
+<style>
+  body
+  {
+    background:#FFF0F5;
+    font-family:"Lucida Grande", Tahoma, Arial, Verdana, sans-serif;
+    font-size:small;
+    margin:8px 0 16px;
+    text-align:center;
+  }
+  .bar:hover{
+    fill: brown;
+  }
+
+  .axis {
+    font: 10px sans-serif;
+  }
+
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+  
+  .x.axis path {
+      display: none;
+  }
+
+  .d3-tip {
+    line-height: 1;
+    font-weight: bold;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    border-radius: 2px;
+  }
+
+  /* Creates a small triangle extender for the tooltip */
+  .d3-tip:after {
+      box-sizing: border-box;
+      display: inline;
+      font-size: 10px;
+      width: 100%;
+      line-height: 1;
+      color: rgba(0, 0, 0, 0.8);
+      content: "\25BC";
+      position: absolute;
+      text-align: center;
+  }
+
+  /* Style northward tooltips differently */
+  .d3-tip.n:after {
+      margin: -1px 0 0 0;
+      top: 100%;
+      left: 0;
+  }
+</style>
+
+</head>
+<body id="main_body" >
+  <div>
+  	<p>
+  		DWDM课程实践：project1 &emsp; 李红改&nbsp; 1400012922
+  	</p>
+  </div>
+  <img id="top" src="top.png" alt="">
+  <div id="form_container">
+    <form id="addform" target="_blank" class="appnitro" enctype="multipart/form-data" method="post" action="importCSV.php?action=import" >
+    <div class="form_description">
+      <h2>数据仓库与数据挖掘课程实践：基于统计方法的数据分布图形显示</h2>
+      <p>请首先导入CSV文件到数据库，然后勾选你关心的属性，即可实现属性取值的可视化及简单交互(*^__^*)</p>
+    </div>    
+    <ul >
+      
+      <li id="li_1" >
+      <label class="description" for="element_1">导入CSV数据文件 </label>
+      </br>
+      <div>
+        <input id="element_1" name="file" class="element file" type="file"/> 
+        </div> <p class="guidelines" id="guide_1"><small>请选择你要上传到数据库的CSV文件</small></p> 
+      </li> 
+
+      <li class="buttons">
+        
+        <input id="saveForm" class="button_text" type="submit" name="submit" value="Submit" />
+      </li>
+      
+    </ul>
+    </form> 
+
+  </div>
+  
+
+  <script type="text/javascript">
+<!--
+// dataByGroup: The ith element is property tbl_name[i]'s Statistics data
+  var dataByGroup = new Array();
+
+  var tbl_name = [];
+  tbl_name[0] = "age";
+  tbl_name[1] = "job";
+  tbl_name[2] = "marital";
+  tbl_name[3] = "education";
+  tbl_name[4] = "mydefault";
+  tbl_name[5] = "balance";
+  tbl_name[6] = "housing";
+  tbl_name[7] = "loan";
+  tbl_name[8] = "contact";
+  tbl_name[9] = "day";
+  tbl_name[10] = "month";
+  tbl_name[11] = "duration";
+  tbl_name[12] = "campaign";
+  tbl_name[13] = "pdays";
+  tbl_name[14] = "previous";
+  tbl_name[15] = "poutcome";
+  tbl_name[16] = "y";
+  // for each property, through statistics.php to get the data distribution and save it to dataByGroup Array.
+  for (let i = 0; i <= 16; i++) 
+  {
+    //console.log(tbl_name[i]);
+    d3.json("http://localhost/statistics.php?name=" + tbl_name[i],
+    function(error, data) 
+    {
+      dataByGroup[i] = [].concat(data); 
+      //console.log(dataByGroup[i]);  
+    });
+    
+  }
+
+  var flag = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+  var my_flag;
+  var parms =[];
+  var parms_2 = [];
+  var flag_id = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+
+  function bar_reset(my_id, my_id_2, flag_id) {
+    //console.log(flag_id);
+    //my_id
+    //my_id_2
+    console.log("my_id");
+    console.log(my_id);
+    console.log("my_id_2");
+    console.log(my_id_2);
+    if( my_id_2.length !== 0)
+    {
+        console.log("hello parms2");
+        console.log(my_id);
+        console.log(my_id_2);
+
+        for(let i = 0; i <= 16; i++)
+        { 
+          //stack_data = [];
+          if(flag[i] === 1)
+          {
+            if(flag_id[i] !== 1)
+            {
+              if(my_id.length !== 0)
+              {
+                my_id_plot = tbl_name[i] + '_' + my_id + '_' + my_id_2;
+              }
+              else 
+              {
+                 my_id_plot = tbl_name[i] + '_' + '__null' + '_' + my_id_2;               
+              }
+              console.log(my_id_plot);
+              //my_id_2: __balance_-10772.65_-5265.35_
+              d3.json("http://localhost/statistics3.php?name=" + my_id_plot, 
+              function(error, data) {
+                //console.log(data);
+                my_flag = 1;
+
+                var ele = document.getElementById(i)
+                  ele.innerHTML = "";
+                render1(dataByGroup[i], i, my_flag);
+                render2(data, i, my_flag);
+                //stack_data = stack_data.concat(data);
+              });
+            }
+            else 
+            {
+              var ele = document.getElementById(i)
+                ele.innerHTML = "";
+              render1(dataByGroup[i], i, my_flag);
+            }
+          }
+          else {
+            var ele = document.getElementById(i)
+              ele.innerHTML = "";
+          } 
+
+        }
+    }
+    else
+    {
+       for(let i = 0; i <= 16; i++)
+      {
+        //stack_data = [];
+        if(flag[i] === 1)
+        {
+          if(flag_id[i] !== 1)
+          {
+            my_id_plot = tbl_name[i] + my_id;
+            console.log(my_id_plot);
+            d3.json("http://localhost/statistics2.php?name=" + my_id_plot, 
+            function(error, data) {
+              //console.log(data);
+              my_flag = 1;
+
+              var ele = document.getElementById(i)
+                ele.innerHTML = "";
+              render1(dataByGroup[i], i, my_flag);
+              render2(data, i, my_flag);
+              //stack_data = stack_data.concat(data);
+            });
+          }
+          else 
+          {
+            var ele = document.getElementById(i)
+              ele.innerHTML = "";
+            render1(dataByGroup[i], i, my_flag);
+          }
+        }
+        else {
+          var ele = document.getElementById(i)
+            ele.innerHTML = "";
+        } 
+
+      }
+    }
+   
+    parms = [];
+    parms_2 = [];
+    for(var i = 0; i<= 16;i++)
+      flag_id[i] = 0;
+  }
+
+  //var yScale_flag = new Array();
+  // to save the xSale and yScale for histrom
+  var max_height_flag = new Array();
+  var min_height_flag = new Array();
+  var val_min = new Array();
+  var val_max = new Array();
+
+  
+  function draw_plot(plot_id) {
+    flag[plot_id] = 1 - flag[plot_id];// change the show/unshow state
+    showData = [];
+    if (flag[plot_id] === 1) {
+      showData = showData.concat(dataByGroup[plot_id]);
+      my_flag = 0;
+      render1(showData, plot_id, my_flag);    
+    }
+    else {
+      var ele = document.getElementById(plot_id)
+      ele.innerHTML = "";
+    }
+    
+  } 
+
+  
+  
+  function type(d) {
+      d["COUNT(*)"] = +d["COUNT(*)"];
+      return d;
+    }
+
+--> 
+  </script>
+  </br>
+  <input type="checkbox" name="key" value="age" onclick="draw_plot(0);">age
+  <input type="checkbox" name="key" value="job" onclick="draw_plot(1)">job
+  <input type="checkbox" name="key" value="marital" onclick="draw_plot(2)">marital
+  <input type="checkbox" name="key" value="education" onclick="draw_plot(3)">education
+  <input type="checkbox" name="key" value="mydefault" onclick="draw_plot(4)">mydefault
+  <input type="checkbox" name="key" value="balance" onclick="draw_plot(5)">balance
+  <input type="checkbox" name="key" value="housing" onclick="draw_plot(6)">housing
+  <input type="checkbox" name="key" value="loan" onclick="draw_plot(7)">loan
+  <input type="checkbox" name="key" value="contact" onclick="draw_plot(8)">contact
+  <input type="checkbox" name="key" value="day" onclick="draw_plot(9)">day
+  <input type="checkbox" name="key" value="month" onclick="draw_plot(10)">month
+  <input type="checkbox" name="key" value="duration" onclick="draw_plot(11)">duration
+  <input type="checkbox" name="key" value="campaign" onclick="draw_plot(12)">campaign
+  <input type="checkbox" name="key" value="pdays" onclick="draw_plot(13)">pdays
+  <input type="checkbox" name="key" value="previous" onclick="draw_plot(14)">previous
+  <input type="checkbox" name="key" value="poutcome" onclick="draw_plot(15)">poutcome
+  <input type="checkbox" name="key" value="y" onclick="draw_plot(16)">y
+  <br><br>
+  <button onclick="bar_reset(parms,parms_2, flag_id)">set</button>
+  </br>
+
+  <img id="bottom" src="bottom.png" alt="">
+  </br>
+  
+
+  <span id='0'></span>
+  <span id='1'></span>
+  <span id='2'></span>
+  <span id='3'></span>
+  <span id='4'></span>
+  <span id='5'></span>
+  <span id='6'></span>
+  <span id='7'></span>
+  <span id='8'></span>
+  <span id='9'></span>
+  <span id='10'></span>
+  <span id='11'></span>
+  <span id='12'></span>
+  <span id='13'></span>
+  <span id='14'></span>
+  <span id='15'></span>
+  <span id='16'></span>
+  </br>
+  
+  
+  
+  </body>
+</html>

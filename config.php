@@ -1,15 +1,11 @@
 <?php
-/*
-$db_name="bank";//如需更改数据库配置在此更改即可
-$host = "localhost";
-$db_user = "temp";
-$db_pass = "Temp2333!";
-$conn = mysqli_connect($host,$db_user,$db_pass,$db_name);
-*/
+
+// 如需更改数据库配置在此更改即可
 $host = "localhost";
 $db_user = "temp";
 $db_pass = "Temp2333!";
 
+// 连接到mysql
 $conn = mysqli_connect($host,$db_user,$db_pass);
 // Check connection
 if (!$conn) {
@@ -17,13 +13,13 @@ if (!$conn) {
 }
 echo 'Connected successfully' . "<br />";
 
+// 创建bank数据库
 $sql = "DROP DATABASE IF EXISTS bank";
 if ($conn->query($sql) === TRUE) {
     echo "Database check successfully" . "<br />";
 } else {
     echo "Error checking database: " . $conn->error . "<br />";
 }
-
 $sql = "CREATE DATABASE IF NOT EXISTS bank";
 if ($conn->query($sql) === TRUE) {
     echo "Database created successfully" . "<br />";
@@ -31,6 +27,7 @@ if ($conn->query($sql) === TRUE) {
     echo "Error creating database: " . $conn->error . "<br />";
 }
 
+// 选择bank数据库进行操作，创建数据表bank_tbl
 mysqli_select_db($conn, 'bank');
 
 $sql = "CREATE TABLE bank_tbl (
@@ -83,7 +80,6 @@ function input_csv($csv_file) {
     while ($data_line = fgetcsv($csv_file, 10000, ";")) {
         //print_r($data_line);
         //echo "<br />";
-
         //echo $csv_key_name_arr[0]. "<br />";
         if($i == 0){
             $GLOBALS['csv_key_name_arr'] = $data_line;
@@ -91,7 +87,6 @@ function input_csv($csv_file) {
             $i++;
             continue;
         }
-
         foreach($GLOBALS['csv_key_name_arr'] as $csv_key_num=>$csv_key_name){
             //echo $data_line[$csv_key_num] ."<br />";
             $result_arr[$i][$csv_key_num] = $data_line[$csv_key_num];
