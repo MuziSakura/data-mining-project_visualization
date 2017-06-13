@@ -73,8 +73,6 @@
         }
 
 
-
-
         $sql = "SELECT $select_name, COUNT(*) FROM $table WHERE (";
         for($x = 1; $x < $name_length; $x ++)
         {
@@ -99,7 +97,6 @@
         }
 
         
-
         $data = array();
 
         http_response_code(200);
